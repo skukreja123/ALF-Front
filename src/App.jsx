@@ -21,7 +21,7 @@ const CATEGORIES = [
   { id: "bedsheets", label: "Bed Sheets", tagline: "Softness woven for restful nights.", alt: true },
 ];
 
-const WHATSAPP_NUMBER = "923001234567"; // replace with the real number
+const WHATSAPP_NUMBER = "923083420221"; // replace with the real number
 
 // Put your own video file at frontend/public/hero-video.mp4 (a short,
 // looping clip works best — 10-20 seconds, under ~10MB for fast loading).
