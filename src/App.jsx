@@ -208,7 +208,10 @@ export default function App() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Reveal product cards with a "curtain" animation as they scroll into view
+  // Reveal product cards with a "curtain" animation as they scroll into view.
+  // A safety-net timeout force-reveals any card that, for whatever reason
+  // (browser quirk, nested scroll container, etc.), never gets an
+  // intersection event — so products can never end up permanently invisible.
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -219,11 +222,18 @@ export default function App() {
           }
         });
       },
-      { threshold: 0.15 }
+      { threshold: 0, rootMargin: "80px" }
     );
     const cards = document.querySelectorAll(".card:not(.is-visible)");
     cards.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
+
+    const safetyTimer = setTimeout(() => {
+      document.querySelectorAll(".card:not(.is-visible)").forEach((el) => {
+        el.classList.add("is-visible");
+      });
+    }, 1200);
+
+    return () => { observer.disconnect(); clearTimeout(safetyTimer); };
   }, [products, loadingProducts]);
 
   const scrollToId = useCallback((id) => {
