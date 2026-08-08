@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { X, Menu, Trash2, LogOut, ImagePlus, Star, ChevronLeft, ChevronRight, Eye, ChevronDown, Share2 } from "lucide-react";
+import { X, Menu, Trash2, LogOut, ImagePlus, Star, ChevronLeft, ChevronRight, Eye, ChevronDown, Share2, ZoomIn, ZoomOut } from "lucide-react";
 import { getProducts, createProduct, deleteProduct, updateStock } from "./api";
 
 /* ---------------------------------------------------------
@@ -165,6 +165,8 @@ export default function App() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [zoomedIn, setZoomedIn] = useState(false);
   const carouselRefs = useRef({});
 
   function scrollCarousel(categoryId, dir) {
@@ -364,16 +366,30 @@ export default function App() {
   }
   function closeDetail() {
     setSelectedProduct(null);
+    setLightboxOpen(false);
+    setZoomedIn(false);
     window.history.replaceState(null, "", window.location.pathname);
   }
   function nextImage() {
     if (!selectedProduct) return;
+    setZoomedIn(false);
     setGalleryIndex((i) => (i + 1) % selectedProduct.images.length);
   }
   function prevImage() {
     if (!selectedProduct) return;
+    setZoomedIn(false);
     setGalleryIndex((i) => (i - 1 + selectedProduct.images.length) % selectedProduct.images.length);
   }
+  function openLightbox() { setLightboxOpen(true); setZoomedIn(false); }
+  function closeLightbox() { setLightboxOpen(false); setZoomedIn(false); }
+
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === "Escape" && lightboxOpen) closeLightbox();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightboxOpen]);
 
   function itemsFor(label) {
     return products.filter((p) => p.category === label);
@@ -585,6 +601,7 @@ export default function App() {
         .detail-gallery{background:var(--ink);display:flex;flex-direction:column;}
         .detail-main-image{position:relative;aspect-ratio:4/5;background:var(--ink);}
         .detail-main-image img{width:100%;height:100%;object-fit:cover;}
+        .zoom-hint{position:absolute;top:10px;left:10px;display:flex;align-items:center;gap:5px;background:rgba(0,0,0,.5);color:#fff;font-size:10px;letter-spacing:.05em;text-transform:uppercase;padding:6px 11px;border-radius:var(--radius-pill);cursor:zoom-in;backdrop-filter:blur(4px);}
         .gallery-arrow{position:absolute;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.4);color:#fff;border:none;border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;transition:background .2s;}
         .gallery-arrow:hover{background:rgba(0,0,0,.65);}
         .gallery-arrow.left{left:12px;}
@@ -594,6 +611,22 @@ export default function App() {
         .thumb-strip-item{flex-shrink:0;width:56px;height:56px;padding:0;border:2px solid transparent;border-radius:var(--radius-sm);overflow:hidden;opacity:.55;transition:opacity .2s,border-color .2s;background:none;}
         .thumb-strip-item img{width:100%;height:100%;object-fit:cover;}
         .thumb-strip-item.active,.thumb-strip-item:hover{opacity:1;border-color:var(--gold);}
+
+        /* ---- Fullscreen image lightbox / zoom ---- */
+        .lightbox-overlay{position:fixed;inset:0;z-index:700;background:rgba(15,9,6,.94);display:flex;align-items:center;justify-content:center;}
+        .lightbox-scroll{width:100%;height:100%;overflow:auto;display:flex;align-items:center;justify-content:center;padding:60px 20px;}
+        .lightbox-scroll img{max-width:90vw;max-height:82vh;object-fit:contain;cursor:zoom-in;transition:transform .3s ease;border-radius:4px;}
+        .lightbox-scroll img.zoomed{max-width:none;max-height:none;width:auto;height:220vh;cursor:zoom-out;}
+        .lightbox-close{position:absolute;top:20px;right:20px;z-index:5;background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:50%;width:42px;height:42px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);}
+        .lightbox-close:hover{background:rgba(255,255,255,.22);}
+        .lightbox-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:5;background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:50%;width:48px;height:48px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);}
+        .lightbox-arrow:hover{background:rgba(255,255,255,.22);}
+        .lightbox-arrow.left{left:20px;}
+        .lightbox-arrow.right{right:20px;}
+        .lightbox-counter{position:absolute;top:24px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,.12);color:#fff;font-size:12px;padding:6px 14px;border-radius:var(--radius-pill);backdrop-filter:blur(6px);}
+        .lightbox-zoom-toggle{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);background:var(--gold);color:var(--maroon-dark);border:none;font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;padding:11px 22px;border-radius:var(--radius-pill);display:flex;align-items:center;gap:7px;box-shadow:var(--shadow-lift);}
+        .lightbox-zoom-toggle:hover{background:var(--gold-light);}
+        @media (max-width:640px){.lightbox-arrow{width:38px;height:38px;}.lightbox-arrow.left{left:8px;}.lightbox-arrow.right{right:8px;}}
         .detail-info{padding:32px 30px;display:flex;flex-direction:column;}
         .detail-info h3{font-size:28px;color:var(--maroon);margin:0 0 10px;font-weight:600;}
         .detail-price{font-size:16px;color:var(--gold);letter-spacing:.04em;margin:6px 0 6px;font-weight:500;}
@@ -845,7 +878,8 @@ export default function App() {
             <div className="detail-scroll">
             <div className="detail-gallery">
               <div className="detail-main-image">
-                <img src={selectedProduct.images[galleryIndex]} alt={selectedProduct.title} />
+                <img src={selectedProduct.images[galleryIndex]} alt={selectedProduct.title} onClick={openLightbox} style={{ cursor: "zoom-in" }} />
+                <span className="zoom-hint" onClick={openLightbox} aria-hidden="true"><ZoomIn size={14} /> Click to zoom</span>
                 {selectedProduct.images.length > 1 && (
                   <>
                     <button className="gallery-arrow left" onClick={prevImage} aria-label="Previous photo"><ChevronLeft size={22} /></button>
@@ -898,6 +932,31 @@ export default function App() {
         )}
       </div>
 
+      {/* ================= IMAGE LIGHTBOX / ZOOM ================= */}
+      {lightboxOpen && selectedProduct && (
+        <div className="lightbox-overlay" onClick={(e) => { if (e.target === e.currentTarget) closeLightbox(); }}>
+          <button className="lightbox-close" onClick={closeLightbox} aria-label="Close zoom"><X size={24} /></button>
+          {selectedProduct.images.length > 1 && (
+            <>
+              <button className="lightbox-arrow left" onClick={(e) => { e.stopPropagation(); prevImage(); }} aria-label="Previous photo"><ChevronLeft size={26} /></button>
+              <button className="lightbox-arrow right" onClick={(e) => { e.stopPropagation(); nextImage(); }} aria-label="Next photo"><ChevronRight size={26} /></button>
+              <span className="lightbox-counter">{galleryIndex + 1} / {selectedProduct.images.length}</span>
+            </>
+          )}
+          <div className="lightbox-scroll">
+            <img
+              src={selectedProduct.images[galleryIndex]}
+              alt={selectedProduct.title}
+              className={zoomedIn ? "zoomed" : ""}
+              onClick={() => setZoomedIn((z) => !z)}
+            />
+          </div>
+          <button className="lightbox-zoom-toggle" onClick={() => setZoomedIn((z) => !z)}>
+            {zoomedIn ? <><ZoomOut size={15} /> Zoom Out</> : <><ZoomIn size={15} /> Zoom In</>}
+          </button>
+        </div>
+      )}
+
       {/* ================= ADMIN MODAL ================= */}
       <div className={"modal-overlay" + (adminOpen ? " open" : "")} onClick={(e) => { if (e.target === e.currentTarget) closeAdmin(); }}>
         <div className="modal" role="dialog" aria-modal="true">
@@ -922,7 +981,7 @@ export default function App() {
                 </div>
                 <div className="form-msg error">{loginError}</div>
                 <button className="admin-submit" onClick={handleLogin} disabled={loggingIn}>{loggingIn ? "Checking…" : "Log In"}</button>
-                <p className="storage-note">Demo password: <strong>alif2026</strong> (matches ADMIN_KEY in the server's .env). Change it there before this goes live.</p>
+                {/* <p className="storage-note">Demo password: <strong>alif2026</strong> (matches ADMIN_KEY in the server's .env). Change it there before this goes live.</p> */}
               </div>
             ) : (
               <div>
