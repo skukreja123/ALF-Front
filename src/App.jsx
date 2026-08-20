@@ -963,6 +963,20 @@ export default function App() {
                 ) : (
                   <p className="detail-description muted">No description added for this piece yet.</p>
                 )}
+                {(selectedProduct.material || selectedProduct.design) && (
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 14 }}>
+                    {selectedProduct.material && (
+                      <span className="stock-badge" style={{ position: "static", background: "var(--blush)", color: "var(--maroon)" }}>
+                        {selectedProduct.material}
+                      </span>
+                    )}
+                    {selectedProduct.design && (
+                      <span className="stock-badge" style={{ position: "static", background: "var(--blush)", color: "var(--maroon)" }}>
+                        {selectedProduct.design}
+                      </span>
+                    )}
+                  </div>
+                )}
                 <a
                   className="btn solid detail-wa"
                   href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
@@ -1035,10 +1049,7 @@ export default function App() {
               </div>
             ) : (
               <div>
-                <div className="admin-dash-head">
-                  <span className="eyebrow" style={{ margin: 0 }}>Add a product</span>
-                  <button className="logout-link" onClick={handleLogout}><LogOut size={13} /> Log out</button>
-                </div>
+
 
                 <div id="adminFormTop" className="admin-dash-head">
                   <span className="eyebrow" style={{ margin: 0 }}>
@@ -1160,6 +1171,9 @@ export default function App() {
                           <span>{p.stock ?? 0}</span>
                           <button type="button" onClick={() => handleAdjustStock(p, 1)} aria-label="Increase stock">+</button>
                         </div>
+                        <button className="del" style={{ borderColor: "rgba(217,164,65,.5)", color: "var(--maroon)" }} onClick={() => startEdit(p)}>
+                          Edit
+                        </button>
                         <button className="del" onClick={() => handleDelete(p)}><Trash2 size={13} /> Remove</button>
                       </div>
                     ))
