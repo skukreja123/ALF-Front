@@ -182,8 +182,8 @@ export default function App() {
     track.scrollBy({ left: dir * (cardWidth + 22) * 2, behavior: "smooth" });
   }
 
-  function resetForm() {
-     setEditingId(null);
+ function resetForm() {
+  setEditingId(null);
   setPTitle("");
   setPDescription("");
   setPPrice("");
@@ -193,9 +193,29 @@ export default function App() {
   setPDesign("");
   setPImages([]);
   setImageError("");
- 
-  
-  if (fileInputRef.current) fileInputRef.current.value = "";
+  setFormMsg(null);
+
+  if (fileInputRef.current) {
+    fileInputRef.current.value = "";
+  }
+}
+
+function cancelEdit() {
+  setEditingId(null);
+  setPTitle("");
+  setPDescription("");
+  setPPrice("");
+  setPRating(0);
+  setPStock("");
+  setPMaterial("");
+  setPDesign("");
+  setPImages([]);
+  setImageError("");
+  setFormMsg(null);
+
+  if (fileInputRef.current) {
+    fileInputRef.current.value = "";
+  }
 }
 
 function startEdit(product) {
@@ -282,10 +302,13 @@ function startEdit(product) {
   }, []);
 
   function openAdmin() {
-    setAdminOpen(true);
-    setLoginError("");
-    setPasswordInput("");
-  }
+  setAdminOpen(true);
+  setLoginError("");
+  setPasswordInput("");
+
+  // Always open Admin Portal in Add Product mode
+  resetForm();
+}
   function closeAdmin() { setAdminOpen(false); }
 
   async function handleLogin() {
@@ -1151,7 +1174,7 @@ function startEdit(product) {
                       {saving ? "Saving…" : editingId ? "Save Changes" : "Add Product"}
                     </button>
                     {editingId && (
-                      <button type="button" className="admin-submit" style={{ background: "var(--ink-soft)" }} onClick={resetForm}>
+                      <button type="button" className="admin-submit" style={{ background: "var(--ink-soft)" }} onClick={cancelEdit}>
                         Cancel Edit
                       </button>
                     )}
