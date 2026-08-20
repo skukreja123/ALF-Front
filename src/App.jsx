@@ -183,6 +183,7 @@ export default function App() {
   }
 
   function resetForm() {
+     setEditingId(null);
   setPTitle("");
   setPDescription("");
   setPPrice("");
@@ -192,7 +193,8 @@ export default function App() {
   setPDesign("");
   setPImages([]);
   setImageError("");
-  setEditingId(null);
+ 
+  
   if (fileInputRef.current) fileInputRef.current.value = "";
 }
 
