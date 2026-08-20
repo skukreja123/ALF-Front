@@ -136,6 +136,37 @@ function compressImage(file, maxW = 800, quality = 0.75) {
   });
 }
 
+function resetForm() {
+  setPTitle("");
+  setPDescription("");
+  setPPrice("");
+  setPRating(0);
+  setPStock("");
+  setPMaterial("");
+  setPDesign("");
+  setPImages([]);
+  setImageError("");
+  setEditingId(null);
+  if (fileInputRef.current) fileInputRef.current.value = "";
+}
+
+function startEdit(product) {
+  setEditingId(product.id);
+  setPCategory(product.category);
+  setPTitle(product.title);
+  setPDescription(product.description || "");
+  setPPrice(product.price || "");
+  setPRating(product.rating || 0);
+  setPStock(product.stock ?? "");
+  setPMaterial(product.material || "");
+  setPDesign(product.design || "");
+  setPImages(product.images || []); // existing photos load into the same editor —
+  setImageError("");                // you can remove old ones and add new ones below
+  setFormMsg(null);
+  // scroll the admin form into view
+  document.getElementById("adminFormTop")?.scrollIntoView({ behavior: "smooth" });
+}
+
 export default function App() {
   const [products, setProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -168,6 +199,10 @@ export default function App() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [zoomedIn, setZoomedIn] = useState(false);
   const carouselRefs = useRef({});
+
+  const [pMaterial, setPMaterial] = useState("");
+  const [pDesign, setPDesign] = useState("");
+  const [editingId, setEditingId] = useState(null); // null = adding, otherwise id being edited
 
   function scrollCarousel(categoryId, dir) {
     const track = carouselRefs.current[categoryId];
@@ -317,20 +352,25 @@ export default function App() {
       return;
     }
     setSaving(true);
+    const payload = {
+      category: pCategory,
+      title: pTitle.trim(),
+      description: pDescription.trim(),
+      price: pPrice.trim(),
+      rating: pRating,
+      stock: pStock === "" ? 0 : Number(pStock),
+      material: pMaterial.trim(),
+      design: pDesign.trim(),
+      images: pImages,
+    };
     try {
-      await createProduct(
-        {
-          category: pCategory,
-          title: pTitle.trim(),
-          description: pDescription.trim(),
-          price: pPrice.trim(),
-          rating: pRating,
-          stock: pStock === "" ? 0 : Number(pStock),
-          images: pImages,
-        },
-        adminKey
-      );
-      setFormMsg({ type: "success", text: "Product added — visible to everyone now." });
+      if (editingId) {
+        await updateProduct(editingId, payload, adminKey);
+        setFormMsg({ type: "success", text: "Product updated." });
+      } else {
+        await createProduct(payload, adminKey);
+        setFormMsg({ type: "success", text: "Product added — visible to everyone now." });
+      }
       resetForm();
       await refreshProducts();
       setTimeout(() => setFormMsg(null), 3000);
@@ -886,57 +926,57 @@ export default function App() {
               {linkCopied ? "Copied!" : <Share2 size={18} />}
             </button>
             <div className="detail-scroll">
-            <div className="detail-gallery">
-              <div className="detail-main-image">
-                <img src={selectedProduct.images[galleryIndex]} alt={selectedProduct.title} onClick={openLightbox} style={{ cursor: "zoom-in" }} />
-                <span className="zoom-hint" onClick={openLightbox} aria-hidden="true"><ZoomIn size={14} /> Click to zoom</span>
+              <div className="detail-gallery">
+                <div className="detail-main-image">
+                  <img src={selectedProduct.images[galleryIndex]} alt={selectedProduct.title} onClick={openLightbox} style={{ cursor: "zoom-in" }} />
+                  <span className="zoom-hint" onClick={openLightbox} aria-hidden="true"><ZoomIn size={14} /> Click to zoom</span>
+                  {selectedProduct.images.length > 1 && (
+                    <>
+                      <button className="gallery-arrow left" onClick={prevImage} aria-label="Previous photo"><ChevronLeft size={22} /></button>
+                      <button className="gallery-arrow right" onClick={nextImage} aria-label="Next photo"><ChevronRight size={22} /></button>
+                      <span className="gallery-counter">{galleryIndex + 1} / {selectedProduct.images.length}</span>
+                    </>
+                  )}
+                </div>
                 {selectedProduct.images.length > 1 && (
-                  <>
-                    <button className="gallery-arrow left" onClick={prevImage} aria-label="Previous photo"><ChevronLeft size={22} /></button>
-                    <button className="gallery-arrow right" onClick={nextImage} aria-label="Next photo"><ChevronRight size={22} /></button>
-                    <span className="gallery-counter">{galleryIndex + 1} / {selectedProduct.images.length}</span>
-                  </>
+                  <div className="thumb-strip">
+                    {selectedProduct.images.map((img, i) => (
+                      <button key={i} className={"thumb-strip-item" + (i === galleryIndex ? " active" : "")} onClick={() => setGalleryIndex(i)}>
+                        <img src={img} alt="" />
+                      </button>
+                    ))}
+                  </div>
                 )}
               </div>
-              {selectedProduct.images.length > 1 && (
-                <div className="thumb-strip">
-                  {selectedProduct.images.map((img, i) => (
-                    <button key={i} className={"thumb-strip-item" + (i === galleryIndex ? " active" : "")} onClick={() => setGalleryIndex(i)}>
-                      <img src={img} alt="" />
-                    </button>
-                  ))}
+              <div className="detail-info">
+                <span className="eyebrow">{selectedProduct.category}</span>
+                <h3>{selectedProduct.title}</h3>
+                <StarRating value={selectedProduct.rating} size={17} />
+                {selectedProduct.price ? <div className="detail-price">{selectedProduct.price}</div> : null}
+                <div className={"detail-stock " + stockStatus(selectedProduct.stock)}>
+                  {stockStatus(selectedProduct.stock) === "out" && "Out of Stock"}
+                  {stockStatus(selectedProduct.stock) === "low" && `Only ${selectedProduct.stock} left in stock`}
+                  {stockStatus(selectedProduct.stock) === "in" && "In Stock"}
                 </div>
-              )}
-            </div>
-            <div className="detail-info">
-              <span className="eyebrow">{selectedProduct.category}</span>
-              <h3>{selectedProduct.title}</h3>
-              <StarRating value={selectedProduct.rating} size={17} />
-              {selectedProduct.price ? <div className="detail-price">{selectedProduct.price}</div> : null}
-              <div className={"detail-stock " + stockStatus(selectedProduct.stock)}>
-                {stockStatus(selectedProduct.stock) === "out" && "Out of Stock"}
-                {stockStatus(selectedProduct.stock) === "low" && `Only ${selectedProduct.stock} left in stock`}
-                {stockStatus(selectedProduct.stock) === "in" && "In Stock"}
+                {selectedProduct.description ? (
+                  <p className="detail-description">{selectedProduct.description}</p>
+                ) : (
+                  <p className="detail-description muted">No description added for this piece yet.</p>
+                )}
+                <a
+                  className="btn solid detail-wa"
+                  href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
+                    (stockStatus(selectedProduct.stock) === "out"
+                      ? `Hello ALIF Traditional, is "${selectedProduct.title}" going to be restocked?`
+                      : `Hello ALIF Traditional, I'm interested in "${selectedProduct.title}"${selectedProduct.price ? ` (${selectedProduct.price})` : ""}.`) +
+                    `\n\nHere's the product: ${window.location.origin}${window.location.pathname}#product-${selectedProduct.id}`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {stockStatus(selectedProduct.stock) === "out" ? "Ask About Restock" : "Ask about this on WhatsApp"}
+                </a>
               </div>
-              {selectedProduct.description ? (
-                <p className="detail-description">{selectedProduct.description}</p>
-              ) : (
-                <p className="detail-description muted">No description added for this piece yet.</p>
-              )}
-              <a
-                className="btn solid detail-wa"
-                href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
-                  (stockStatus(selectedProduct.stock) === "out"
-                    ? `Hello ALIF Traditional, is "${selectedProduct.title}" going to be restocked?`
-                    : `Hello ALIF Traditional, I'm interested in "${selectedProduct.title}"${selectedProduct.price ? ` (${selectedProduct.price})` : ""}.`) +
-                  `\n\nHere's the product: ${window.location.origin}${window.location.pathname}#product-${selectedProduct.id}`
-                )}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {stockStatus(selectedProduct.stock) === "out" ? "Ask About Restock" : "Ask about this on WhatsApp"}
-              </a>
-            </div>
             </div>
           </div>
         )}
@@ -1000,6 +1040,14 @@ export default function App() {
                   <button className="logout-link" onClick={handleLogout}><LogOut size={13} /> Log out</button>
                 </div>
 
+                <div id="adminFormTop" className="admin-dash-head">
+                  <span className="eyebrow" style={{ margin: 0 }}>
+                    {editingId ? "Edit product" : "Add a product"}
+                  </span>
+                  <button className="logout-link" onClick={handleLogout}><LogOut size={13} /> Log out</button>
+                </div>
+
+
                 <form onSubmit={handleSubmit}>
                   <div className="field">
                     <label htmlFor="pCategory">Category</label>
@@ -1042,6 +1090,26 @@ export default function App() {
                     />
                   </div>
                   <div className="field">
+                    <label htmlFor="pMaterial">Material (optional)</label>
+                    <input
+                      type="text"
+                      id="pMaterial"
+                      placeholder="e.g. Lawn, Pure Cotton, Silk Blend"
+                      value={pMaterial}
+                      onChange={(e) => setPMaterial(e.target.value)}
+                    />
+                  </div>
+                  <div className="field">
+                    <label htmlFor="pDesign">Design (optional)</label>
+                    <input
+                      type="text"
+                      id="pDesign"
+                      placeholder="e.g. Hand Embroidered, Digital Print, Chikankari"
+                      value={pDesign}
+                      onChange={(e) => setPDesign(e.target.value)}
+                    />
+                  </div>
+                  <div className="field">
                     <label>Photos ({pImages.length}/{MAX_PHOTOS})</label>
                     {pImages.length > 0 && (
                       <div className="photo-preview-grid">
@@ -1063,7 +1131,16 @@ export default function App() {
                     {imageError ? <div className="form-msg error">{imageError}</div> : null}
                   </div>
                   {formMsg ? <div className={"form-msg " + formMsg.type}>{formMsg.text}</div> : <div className="form-msg"></div>}
-                  <button type="submit" className="admin-submit" disabled={saving}>{saving ? "Saving…" : "Add Product"}</button>
+                  <div style={{ display: "flex", gap: 10 }}>
+                    <button type="submit" className="admin-submit" disabled={saving}>
+                      {saving ? "Saving…" : editingId ? "Save Changes" : "Add Product"}
+                    </button>
+                    {editingId && (
+                      <button type="button" className="admin-submit" style={{ background: "var(--ink-soft)" }} onClick={resetForm}>
+                        Cancel Edit
+                      </button>
+                    )}
+                  </div>
                 </form>
 
                 <div className="manage-list">

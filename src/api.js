@@ -12,6 +12,19 @@ async function handle(res) {
   return res.json();
 }
 
+export async function updateProduct(id, data, adminKey) {
+  const res = await fetch(`${API_URL}/api/products/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || "Unauthorized");
+  }
+  return res.json();
+}
+
 export async function getProducts() {
   const res = await fetch(`${API_URL}/api/products`);
   return handle(res);
@@ -53,3 +66,5 @@ export async function updateStock(id, stock, adminKey) {
   });
   return handle(res);
 }
+
+
