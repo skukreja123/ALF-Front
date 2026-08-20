@@ -136,36 +136,7 @@ function compressImage(file, maxW = 800, quality = 0.75) {
   });
 }
 
-function resetForm() {
-  setPTitle("");
-  setPDescription("");
-  setPPrice("");
-  setPRating(0);
-  setPStock("");
-  setPMaterial("");
-  setPDesign("");
-  setPImages([]);
-  setImageError("");
-  setEditingId(null);
-  if (fileInputRef.current) fileInputRef.current.value = "";
-}
 
-function startEdit(product) {
-  setEditingId(product.id);
-  setPCategory(product.category);
-  setPTitle(product.title);
-  setPDescription(product.description || "");
-  setPPrice(product.price || "");
-  setPRating(product.rating || 0);
-  setPStock(product.stock ?? "");
-  setPMaterial(product.material || "");
-  setPDesign(product.design || "");
-  setPImages(product.images || []); // existing photos load into the same editor —
-  setImageError("");                // you can remove old ones and add new ones below
-  setFormMsg(null);
-  // scroll the admin form into view
-  document.getElementById("adminFormTop")?.scrollIntoView({ behavior: "smooth" });
-}
 
 export default function App() {
   const [products, setProducts] = useState([]);
@@ -210,6 +181,37 @@ export default function App() {
     const cardWidth = track.querySelector(".card")?.offsetWidth || 260;
     track.scrollBy({ left: dir * (cardWidth + 22) * 2, behavior: "smooth" });
   }
+
+  function resetForm() {
+  setPTitle("");
+  setPDescription("");
+  setPPrice("");
+  setPRating(0);
+  setPStock("");
+  setPMaterial("");
+  setPDesign("");
+  setPImages([]);
+  setImageError("");
+  setEditingId(null);
+  if (fileInputRef.current) fileInputRef.current.value = "";
+}
+
+function startEdit(product) {
+  setEditingId(product.id);
+  setPCategory(product.category);
+  setPTitle(product.title);
+  setPDescription(product.description || "");
+  setPPrice(product.price || "");
+  setPRating(product.rating || 0);
+  setPStock(product.stock ?? "");
+  setPMaterial(product.material || "");
+  setPDesign(product.design || "");
+  setPImages(product.images || []); // existing photos load into the same editor —
+  setImageError("");                // you can remove old ones and add new ones below
+  setFormMsg(null);
+  // scroll the admin form into view
+  document.getElementById("adminFormTop")?.scrollIntoView({ behavior: "smooth" });
+}
 
   const refreshProducts = useCallback(async () => {
     try {
