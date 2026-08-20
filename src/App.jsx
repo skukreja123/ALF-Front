@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { X, Menu, Trash2, LogOut, ImagePlus, Star, ChevronLeft, ChevronRight, Eye, ChevronDown, Share2, ZoomIn, ZoomOut } from "lucide-react";
-import { getProducts, createProduct, deleteProduct, updateStock } from "./api";
+import { getProducts, createProduct, deleteProduct, updateStock, updateProduct } from "./api";
 
 /* ---------------------------------------------------------
    ALIF Traditional — single page React site with admin portal.
